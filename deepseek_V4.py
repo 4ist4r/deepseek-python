@@ -1,0 +1,62 @@
+from ollama import chat
+import sys
+import pyttsx3
+import customtkinter as ctk
+
+# Inicializar el motor de síntesis de voz
+engine = pyttsx3.init()
+
+# Ajustar la velocidad del habla (puedes ajustar este valor según tus necesidades)
+rate = engine.getProperty('rate')
+engine.setProperty('rate', rate - 80)  # Disminuir la velocidad para una lectura más fluida
+
+def run_chat():
+    # Limpiar el área de texto antes de mostrar el nuevo mensaje
+    text_area.delete("1.0", ctk.END)
+    
+    stream = chat(
+        model='deepseek-r1:8b',
+        messages=[{'role': 'user', 'content': entry.get()}],
+        stream=True,
+    )
+
+    content = ""
+
+    for chunk in stream:
+        if chunk and 'message' in chunk and chunk['message'].content:
+            # Obtener el contenido del chunk
+            chunk_content = chunk['message'].content
+            
+            # Imprimir el contenido en la interfaz gráfica
+            text_area.insert(ctk.END, chunk_content)
+            text_area.see(ctk.END)
+            
+            # Agregar el contenido al texto completo
+            content += chunk_content
+
+    # Decir el contenido en voz alta después de recibir todo el mensaje
+    engine.say(content)
+    engine.runAndWait()
+
+# Configurar la apariencia de customtkinter
+ctk.set_appearance_mode("dark")  # Modo oscuro
+ctk.set_default_color_theme("blue")  # Tema de color
+
+# Crear la ventana principal
+root = ctk.CTk()
+root.title("DeepSeek Chat")
+
+# Crear un área de texto desplazable
+text_area = ctk.CTkTextbox(root, wrap=ctk.WORD, width=500, height=400)
+text_area.pack(padx=10, pady=10)
+
+# Crear una entrada de texto
+entry = ctk.CTkEntry(root, width=500)
+entry.pack(padx=10, pady=10)
+
+# Crear un botón para iniciar el chat
+button = ctk.CTkButton(root, text="Enviar", command=run_chat)
+button.pack(padx=10, pady=10)
+
+# Ejecutar la aplicación
+root.mainloop()
